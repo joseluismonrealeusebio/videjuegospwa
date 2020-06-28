@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lista de videojuegos</title>
+    <script>
+      /* invoca a registraServiceWorker instalar la aplicación en el caché del
+       * navegador. No se espera a que termine el registro. */
+      registraServiceWorker();
+      /** Registra un service worker para instalar la aplicación en el
+       * caché del navegador. La palabra reservada async indica que no espera
+       * a que termine y libera el registro de activación que lo llamó. */
+      async function registraServiceWorker() {
+        if ("serviceWorker" in navigator) {
+          try {
+            /* Registra el service worker y espera que termine. El service
+             * worker debe estar en la carpeta public. La palabra await indica
+             * que espera a que termine y solo puede usarse en una función
+             * async. */
+            const registro = await navigator.serviceWorker.register("sw.js");
+            // Registro correcto y se muestra en la consola.
+            console.log("Service Worker registrado.");
+            console.log(registro);
+          } catch (e) {
+            // Hubo un error en el registro.
+            muestraError(e);
+          }
+        }
+      }
+      /** Procesa una excepción y muestra un mensaje de error.
+       * @param {Error} e descripción del error. */
+      function muestraError(e) {
+        console.log(e);
+        alert(e.message);
+      }
+    </script>
+
+    <!-- Ícono para la página web. Debe ponerse en la raíz de la página. -->
+    <link rel="icon" sizes="32x32" href="favicon.ico">
+
+    <!-- Color de la barra de navegación de Chrome en dispositivos móviles. -->
+    <meta name="theme-color" content="#ffcb2d">
+
+    <!-- Configuración de la PWA: Chrome y Edge. -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Configuración para Web Clip en Safari. -->
+    <meta name="apple-mobile-web-app-title" content="aplipwa">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="img/icono-2048.png">
+    <link rel="apple-touch-icon" sizes="256x256" href="img/icono-256.png">
+    <link rel="apple-touch-icon" sizes="1024x1024" href="img/icono-1024.png">
+    <link rel="apple-touch-icon" sizes="2048x2048" href="img/icono-2048.png">
+
+    <script type="module" src="cmp/mi-footer.js"></script>
+    <link rel="stylesheet" href="css/estilo.css">
+
+    <!-- Carga el núcleo de Firebase. Actualiza los números de versión cuando
+    sea necesario. Hemos quitado el atributo defer que aparecía originalmente.
+    -->
+    <script src="/__/firebase/7.14.6/firebase-app.js"></script>
+    <!-- Solo incluye las características de Firebase que necesites.s -->
+    <script src="/__/firebase/7.14.6/firebase-auth.js"></script>
+    <script src="/__/firebase/7.14.6/firebase-firestore.js"></script>
+    <script src="/__/firebase/7.14.6/firebase-storage.js"></script>
+    <!-- Carga la configuración de tu proyecto en el servidor de Firebase. -->
+    <script src="/__/firebase/init.js"></script>
+    <body>
+     <form action="javascript:guarda()" >
+          <header>
+         
+              
+              <h1>Registrar Videojuego</h1>
+              <button id="agregar" type="button" onclick="alta();">Agregar...</button>
+              <button type="submit">Guardar</button>
+              <button id="eliminar" type="button" onclick="elimina();">Eliminar</button>
+              
+              
+          </header>
+          <p><input id="titulo" type="text" placeholder="titulo" required></p>
+          <p><input id="genero" type="text" placeholder="genero" required></p>
+          <p><input id="plataforma" type="text" placeholder="plataforma" required></p>
+        <ul id="lista">
+            <li><progress max="100">Cargando…</progress></li>
+
+        </ul>
+          
+  
+          <mi-footer ></mi-footer>
+       
+        </form>
+      
+        <script>
+       
+          let id = "";
+          const firestore = firebase.firestore();
+          muestraLista();
+          alta();
+  
+          function muestraLista() {
+            
+            firestore.collection("VIDEOJUEGO").orderBy("VID_TITULO").onSnapshot
+              firestore.collection("VIDEOJUEGO").orderBy("VID_GENERO").onSnapshot
+                  firestore.collection("VIDEOJUEGO").orderBy("VID_PLATA").onSnapshot(
+               
+                  documentos => {
+                      let inner = "";
+                      documentos.forEach(doc =>
+                          inner += /* html */
+                          `<li>
+                <button type=button onclick="muestra('${cod(doc.id)}')">
+                  ${cod(doc.data().VID_TITULO)} 
+                </button>
+                <button type=button onclick="muestra('${cod(doc.id)}')">
+                  ${cod(doc.data().VID_GENERO)} 
+              </button>
+              <button type=button onclick="muestra('${cod(doc.id)}')">
+                  ${cod(doc.data().VID_PLATA)} 
+              </button>
+              
+                </button>
+                
+              </li>`);
+                      lista.innerHTML = inner;
+                  },
+                  e => {
+                      procesaError(e);
+                      muestraLista();
+                  }
+              );
+          }
+  
+          function alta() {
+              agregar.disabled = true;
+              eliminar.disabled = true; 
+              id = ""; 
+              titulo.value = ""; 
+              genero.value="";
+              plataforma.value="";
+             
+          }
+          
+          async function muestra(idSel) {
+              try {
+                  agregar.disabled = false; 
+                  eliminar.disabled = false; 
+              
+                  let doc = await firestore.collection("VIDEOJUEGO").doc(idSel).get();
+                  if (doc.exists) {
+                      id = doc.id;
+                      let data = doc.data();
+                      titulo.value = data.VID_TITULO || "";
+                      genero.value = data.VID_GENERO || "";
+                      plataforma.value= data.VID_PLATA || "";
+                    
+  
+                  } else {
+                      alert(" Videojuego no registrado.");
+                      alta();
+                  }
+              } catch (e) {
+                  procesaError(e);
+              }
+          }
+          async function guarda() {
+              try {
+                  const modelo = {
+                      VID_TITULO: titulo.value.trim(),
+                      VID_GENERO: genero.value.trim(),
+                      VID_PLATA : plataforma.value.trim()
+                    
+                  };
+                  if (id) {
+                  
+                      await firestore.collection("VIDEOJUEGO").doc(id).set(modelo);
+                  } else {
+                  
+                      await firestore.collection("VIDEOJUEGO").add(modelo);
+                  }
+                  alta();
+              } catch (e) {
+                  procesaError(e);
+              }
+          }
+          async function elimina() {
+              try {
+               
+                  await firestore.collection("VIDEOJUEGO").doc(id).delete();
+                  alta();
+              } catch (e) {
+                  procesaError(e);
+              }
+          }
+  
+          function procesaError(e) {
+              console.log(e);
+              alert(e.message);
+          }
+        
+          function cod(valor) {
+            return (valor || "").toString()
+                .replace(/[<>"']/g,
+                    /** @param {string} letra */
+                    letra => {
+                        switch (letra) {
+                            case "<":
+                                return "&lt;";
+                            case ">":
+                                return "&gt;";
+                            case '"':
+                                return "&quot;";
+                            case "'":
+                                return "&#039;";
+                            default:
+                                return letra;
+                        }
+                    });
+        }
+    </script>
+    
+</body>
+
+</html>
